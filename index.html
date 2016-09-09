@@ -1,0 +1,267 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="author" content="ISUX" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="viewport" content="width=device-width, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <title>滑动</title>
+    <!-- <script src="js/jquery.min.js"></script> -->
+    <link rel="stylesheet" type="text/css" href="css/index.css" />
+    <link rel="stylesheet" type="text/css" href="css/loading.css"/>
+    <link rel="stylesheet" type="text/css" href="css/clan.css"/>
+    <style type="text/css">
+    .slider-cover {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2.5rem;
+        transform-origin: top center;
+        -webkit-transform-origin: top center;
+        z-index: -1;
+        display: none;
+    }
+    .slider-cover.show {
+        z-index: 9;
+        display: block;
+    }
+    .slider-cover .animated {
+        animation-duration: 0s;
+        -webkit-animation-duration: 0s;
+    }
+    .sticky-wrap {
+        position: relative; /* 兼容iPhone -webkit-sticky */
+    }
+    .sticky-content {
+        position: relative;
+    }
+    .index-nav.sticky {
+        position: fixed;
+        width: 100%;
+        top: 0;
+        display: none;
+        z-index: 9;
+    }
+    .index-nav.sticky.show {
+        display: block;
+    }
+    .content {
+        position: relative;
+        height: auto;
+    }
+    .bottom-effect {
+        position: fixed;
+        width: 100%;
+        left: 0;
+        bottom: -100px;
+    }
+
+    .notice {
+        width: 100%;
+        height: 200px;
+        display: -webkit-box;
+        position: fixed;
+        -webkit-box-orient: vertical;
+        -webkit-box-pack: center;
+        text-align: center;
+        top: -200px;
+    }
+
+    .notice.active .loading:before {
+        -webkit-animation-play-state: running;
+    }
+
+    .loading {
+        display: block;
+        position: relative;
+    }
+
+    .notice .loading:before {
+        margin: 10px 0;
+        display: inline-block;
+        -webkit-animation-play-state: paused;
+    }
+    </style>
+</head>
+
+<body ontouchstart class="main" style="height:800px;">
+    <section class="notice">
+        <i class="loading"></i>
+    </section>
+    <div class="content" id="content">
+
+      <div id="ui-slider" class=" ui-slider">
+            <span>下拉试试</span>
+      </div>
+
+    </div>
+    <section class="bottom-effect">
+        <img src="img/index/end.png" alt="" style="width:100%" class="end-notice">
+    </section>
+    <script src="js/zepto.min.js"></script>
+    <script src="js/frozen.js"></script>
+    <script src="js/alloy_touch.js?v=22"></script>
+    <script src="js/transform.js"></script>
+    <script src="js/sea.js"></script>
+    <script>
+    var headHeight = $('.ui-slider').height();
+    /*
+    * 创建 slider 动效容器
+    */
+    // var sliderCover = document.createElement("div");
+    // sliderCover.setAttribute('class','slider-cover');
+    // $('body').append( sliderCover );
+
+    var $content = $(".content"),
+        target = $content[0];
+    var $headImg = $(".sticky-head").eq(0);
+    var $boteffect = $('.bottom-effect'),
+        boteffect = $('.bottom-effect')[0];
+    var $notice = $('.notice'),
+        notice = $('.notice')[0];
+    Transform(target);
+    // Transform(copyslider);
+    Transform(boteffect);
+    Transform(notice);
+
+    $(window).scroll(function(){
+        if(document.body.scrollTop  >= headHeight){
+            // $('.index-nav.sticky').addClass('show');
+        }else{
+            // $('.index-nav.sticky').removeClass('show');
+        }
+    });
+
+    var bottomTop = $content.height() - $(window).height();
+    var startY,lastY,
+        sliderHeight = $('.ui-slider').height(),
+        isScale = false,
+        isTouchStart = false,
+        direction;
+
+    $('body').on('touchstart', function (e) {
+        if($(window).scrollTop()<= 0){
+            direction = 'up'
+        } else if($(window).scrollTop()>= (bottomTop-10)) {
+            direction = 'down';
+        } else {
+            direction = null
+        }
+        // console.log(direction);
+        if(direction){
+            isTouchStart = true;
+            isScale = true;
+            startY = e.changedTouches[0].pageY;
+            startX = e.changedTouches[0].pageX;
+        } else {
+            //
+        }
+    });
+    $('body').on('touchmove',function (e) {
+        if ( isTouchStart ){
+
+            var dDis=Math.abs(e.touches[0].pageX - startX) - Math.abs(e.touches[0].pageY - startY);
+            if(dDis>0) return;
+            if(e.changedTouches[0].pageY - startY > 0 && isScale && direction=='up'){
+                // 下滑
+                e.preventDefault();
+                lastY = e.changedTouches[0].pageY;
+                var scale = (1 + (lastY - startY)/(2*sliderHeight)).toFixed(2);
+
+                target.translateY = sliderHeight * (scale - 1) /1.3;
+                notice.translateY = sliderHeight * (scale - 1) /1.3;
+                $notice.addClass('active');
+            } else if(e.changedTouches[0].pageY - startY < 0 && isScale && direction=='down'){
+                // 上滑
+                e.preventDefault();
+                var currentY = -(startY-e.changedTouches[0].pageY)/2
+                if (currentY<-120){
+                    currentY = -120
+                }
+                target.translateY = boteffect.translateY = currentY;
+            }
+        }
+    });
+    $('body').on('touchend',function (e) {
+        if(isTouchStart && isScale){
+            to(target, 'translateY', 0, 200, iosEase, onChange, function(){
+                // 动画结束回调
+                // $copyslider.removeClass('show');
+                $content.attr('style','');
+            });
+            to(notice, 'translateY', 0, 200, iosEase);
+            to(boteffect, 'translateY', 0, 200, iosEase);
+            isScale = false;
+        }
+    });
+
+    function onChange(value){
+        if(direction=='up'){
+            $notice.removeClass('active');//
+            // notice.translateY = (headHeight+value)/headHeight;
+        } else if(direction=='down') {
+
+        }
+
+    }
+
+    function iosEase(x) {
+        return Math.sqrt(1 - Math.pow(x - 1, 2));
+    }
+
+    var tickID = 0
+    function to(el, property, value, time, ease, onChange, onEnd) {
+        var current = el[property];
+        var dv = value - current;
+        var beginTime = new Date();
+        var toTick = function () {
+
+            var dt = new Date() - beginTime;
+            if (dt >= time) {
+                el[property] = value;
+                onChange && onChange(value);
+                onEnd && onEnd(value);
+                return;
+            }
+            el[property] = dv * ease(dt / time) + current;
+            tickID = requestAnimationFrame(toTick);
+            //cancelAnimationFrame必须在 tickID = requestAnimationFrame(toTick);的后面
+            onChange && onChange(el[property]);
+        }
+        toTick();
+    };
+    (function () {
+        var lastTime = 0;
+        var vendors = ['webkit', 'moz'];
+        for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+            window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
+            window.cancelAnimationFrame =
+              window[vendors[x] + 'CancelAnimationFrame'] || window[vendors[x] + 'CancelRequestAnimationFrame'];
+        }
+
+        if (!window.requestAnimationFrame)
+            window.requestAnimationFrame = function (callback, element) {
+                var currTime = new Date().getTime();
+                var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+                var id = window.setTimeout(function () { callback(currTime + timeToCall); },
+                  timeToCall);
+                lastTime = currTime + timeToCall;
+                return id;
+            };
+
+        if (!window.cancelAnimationFrame)
+            window.cancelAnimationFrame = function (id) {
+                clearTimeout(id);
+            };
+    }());
+
+    </script>
+
+</body>
+
+</html>
